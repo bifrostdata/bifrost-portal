@@ -20,10 +20,25 @@ interface DeltaTable {
 
 interface QueryResult {
   columns: string[];
-  data: any[][];
+  data: (string | number | boolean | null)[][];
   row_count: number;
   execution_time_ms: number;
   table_version: number;
+}
+
+interface DeltaTableHistory {
+  version: number;
+  timestamp: string;
+  operation: string;
+  operationParameters: Record<string, unknown>;
+  operationMetrics?: Record<string, unknown>;
+  readVersion?: number;
+  isolationLevel?: string;
+}
+
+interface TableHistoryResponse {
+  current_version: number;
+  history: DeltaTableHistory[];
 }
 
 const Catalog: React.FC = () => {
@@ -40,7 +55,7 @@ const Catalog: React.FC = () => {
   const [customQueryLoading, setCustomQueryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
-  const [tableHistory, setTableHistory] = useState<any>(null);
+  const [tableHistory, setTableHistory] = useState<TableHistoryResponse | null>(null);
 
   useEffect(() => {
     loadTables();
@@ -52,8 +67,9 @@ const Catalog: React.FC = () => {
       setError(null);
       const response = await api.get('/catalog/delta-tables');
       setTables(response.data as DeltaTable[]);
-    } catch (err: any) {
-      setError('Failed to load Delta tables: ' + (err.response?.data?.detail || err.message));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Failed to load Delta tables: ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -72,8 +88,9 @@ const Catalog: React.FC = () => {
       });
       
       setQueryResult(response.data as QueryResult);
-    } catch (err: any) {
-      setError('Failed to preview table: ' + (err.response?.data?.detail || err.message));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Failed to preview table: ' + errorMessage);
     } finally {
       setQueryLoading(false);
     }
@@ -94,8 +111,9 @@ const Catalog: React.FC = () => {
       });
       
       setCustomQueryResult(response.data as QueryResult);
-    } catch (err: any) {
-      setQueryError('Query failed: ' + (err.response?.data?.detail || err.message));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setQueryError('Query failed: ' + errorMessage);
     } finally {
       setCustomQueryLoading(false);
     }
@@ -108,9 +126,10 @@ const Catalog: React.FC = () => {
       setShowPreviewModal(true);
       
       const response = await api.get(`/catalog/delta-tables/${table.name}/history`);
-      setTableHistory(response.data);
-    } catch (err: any) {
-      setError('Failed to load table history: ' + (err.response?.data?.detail || err.message));
+      setTableHistory(response.data as TableHistoryResponse);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Failed to load table history: ' + errorMessage);
     }
   };
 
@@ -382,7 +401,7 @@ const Catalog: React.FC = () => {
                     </span>
                   </div>
                   <div className="space-y-4">
-                    {tableHistory.history.map((entry: any) => (
+                    {tableHistory.history.map((entry: DeltaTableHistory) => (
                       <div key={entry.version} className="border border-gray-200 rounded-lg">
                         <div className="p-4 bg-gray-50 border-b border-gray-200">
                           <div className="flex items-center justify-between">

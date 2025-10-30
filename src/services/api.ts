@@ -27,6 +27,16 @@ export interface SparkJob {
   };
 }
 
+export interface DeltaTableHistory {
+  version: number;
+  timestamp: string;
+  operation: string;
+  operationParameters: Record<string, unknown>;
+  operationMetrics?: Record<string, unknown>;
+  readVersion?: number;
+  isolationLevel?: string;
+}
+
 export interface DataUpload {
   upload_id: string;
   filename: string;
@@ -94,7 +104,7 @@ export interface DeltaTable {
 
 export interface QueryResult {
   columns: string[];
-  data: any[][];
+  data: (string | number | boolean | null)[][];
   row_count: number;
   execution_time_ms: number;
   table_version: number;
@@ -210,8 +220,8 @@ class ApiClient {
     });
   }
 
-  async getDeltaTableHistory(tableName: string): Promise<any> {
-    return this.request<any>(`/api/catalog/delta-tables/${tableName}/history`);
+  async getDeltaTableHistory(tableName: string): Promise<DeltaTableHistory[]> {
+    return this.request<DeltaTableHistory[]>(`/api/catalog/delta-tables/${tableName}/history`);
   }
 
   // Generic GET and POST methods for convenience
@@ -220,7 +230,7 @@ class ApiClient {
     return { data };
   }
 
-  async post<T>(endpoint: string, body: any): Promise<{ data: T }> {
+  async post<T>(endpoint: string, body: Record<string, unknown>): Promise<{ data: T }> {
     const data = await this.request<T>(`/api${endpoint}`, {
       method: 'POST',
       body: JSON.stringify(body),
@@ -230,10 +240,10 @@ class ApiClient {
 
   // Dashboard metrics (derived from other endpoints)
   async getDashboardMetrics() {
-    const [health, jobs, clusters] = await Promise.all([
+    const [health, jobs] = await Promise.all([
       this.getHealth(),
       this.getJobs(),
-      this.getClusters(),
+      // this.getClusters(), // Not used in current implementation
     ]);
 
     const activeJobs = jobs.filter(job => job.status === 'running' || job.status === 'submitted');
