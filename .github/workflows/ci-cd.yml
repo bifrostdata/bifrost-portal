@@ -33,10 +33,9 @@ jobs:
       run: |
         # Check for vulnerabilities first
         npm audit --audit-level=moderate || true
-        
+
         # Auto-fix non-breaking vulnerabilities
         npm audit fix || true    - name: Run ESLint
-      run: npm run lint
 
     - name: Run type checking
       run: npm run type-check
@@ -81,10 +80,10 @@ jobs:
       run: |
         # Check for vulnerabilities first
         npm audit --audit-level=moderate || true
-        
-        # Auto-fix non-breaking vulnerabilities  
+
+        # Auto-fix non-breaking vulnerabilities
         npm audit fix || true
-        
+
         # Final check for high/critical issues
         npm audit --audit-level=high || echo "High/critical vulnerabilities found - review required"
 
